@@ -1,8 +1,9 @@
 use dialoguer::{console::Term, theme::ColorfulTheme, FuzzySelect};
+use std::path::Path;
 use std::process::Command;
-use std::str;
+use std::{env, str};
 
-fn main() -> std::io::Result<()> {
+fn run_switch_branch() -> std::io::Result<()> {
     let branches = if cfg!(target_os = "windows") {
         Command::new("cmd")
             .args(["/C", "git branch"])
@@ -11,7 +12,7 @@ fn main() -> std::io::Result<()> {
     } else {
         Command::new("sh")
             .arg("-c")
-            .arg("cd ~/excalibur && git branch")
+            .arg("git branch")
             .output()
             .expect("failed to process command")
     };
@@ -38,9 +39,7 @@ fn main() -> std::io::Result<()> {
             println!("Selected branch: {}", selected_branch);
             let switch_branch = Command::new("sh")
                 .arg("-c")
-                .arg(format!(
-                    "cd /root/excalibur && git checkout {selected_branch}"
-                ))
+                .arg(format!("git checkout {selected_branch}"))
                 .output()
                 .expect("Failed to checkout to branch!");
             // println!("{:?}", switch_branch);
@@ -51,4 +50,18 @@ fn main() -> std::io::Result<()> {
     }
 
     Ok(())
+}
+
+fn main() -> std::io::Result<()> {
+    // check if current directory is a git repositiory
+    let git_repo = Path::new(env::current_dir().unwrap().to_str().unwrap())
+        .join(".git")
+        .is_dir();
+
+    if !git_repo {
+        println!("current dir is not a git repo, aborting...");
+        Ok(())
+    } else {
+        return run_switch_branch();
+    }
 }
